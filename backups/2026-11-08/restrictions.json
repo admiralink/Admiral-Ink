@@ -1,0 +1,15 @@
+{
+  "onlineOnly": {},
+  "day": {
+    "DA6BA3EDB41B": {
+      "day": "2026-11-08",
+      "level": 0,
+      "wrong": 1
+    },
+    "6251E3CE84E5": {
+      "day": "2026-11-08",
+      "level": 0,
+      "wrong": 3
+    }
+  }
+}

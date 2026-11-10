@@ -1,0 +1,22 @@
+{
+  "banned": {
+    "222671A6493B": {
+      "since": "2026-10-24T09:41:01.736Z",
+      "reason": "banned by hand",
+      "lastIp": "192.168.50.20",
+      "device": "Android TECNO BG6"
+    }
+  },
+  "strikes": {
+    "B8D7AF0EBCE4": {
+      "count": 1,
+      "last": 1791993034515,
+      "lastIp": "192.168.50.15"
+    },
+    "F6D9CB213F9C": {
+      "count": 1,
+      "last": 1792148427784,
+      "lastIp": "192.168.50.24"
+    }
+  }
+}

@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admiral Ink Hotspot</title>
+    <script src="https://js.paystack.co/v1/inline.js" defer></script>
+        <link rel="preload" href="Sora-SemiBold.woff" as="font" type="font/woff" crossorigin>
+    <link rel="preload" href="Sora-Bold.woff" as="font" type="font/woff" crossorigin>
+    <link rel="preload" href="Sora-ExtraBold.woff" as="font" type="font/woff" crossorigin>
+<style>
+        @font-face { font-family: "Sora"; src: url("Sora-SemiBold.woff") format("woff"); font-weight: 100 600; font-style: normal; font-display: swap; }
+        @font-face { font-family: "Sora"; src: url("Sora-Bold.woff") format("woff"); font-weight: 700; font-style: normal; font-display: swap; }
+        @font-face { font-family: "Sora"; src: url("Sora-ExtraBold.woff") format("woff"); font-weight: 800 900; font-style: normal; font-display: swap; }
+        input, button, textarea, select { font-family: inherit; }
+        :root { --primary: #0095ff; --dark: #353535; --card: #161b22; }
+        body { font-family: "Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--dark); color: white; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        
+        .container { border: 1px solid #1f2325; margin: 20px auto; padding-bottom: 15px; width: 400px; background: #fff; border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        /* Phones: the card fills the screen (rounded corners kept, no dark margin) */
+        @media (max-width: 440px) {
+            body { display: block; }
+            .container { width: 100%; margin: 0; border: none; border-radius: 15px; padding-bottom: 10px; box-shadow: none; box-sizing: border-box; }   /* card ends right after the copyright line: no stretching, no empty strip */
+            .container .footer-copy { margin-top: 12px; margin-bottom: 0; }
+        }
+        .topnav { width: 100%; background: var(--primary); display: flex; justify-content: space-around; }
+        .topnav a { color: white; padding: 14px 16px; text-decoration: none; font-weight: bold; font-size: 15px; }
+        .topnav { align-items: center; }
+        .topnav a.nav-logo { padding: 0; display: flex; align-items: center; align-self: stretch; }
+        .topnav a.nav-logo img { display: block; height: 100%; width: auto; max-height: 44px; object-fit: contain; }
+        
+        .header { padding: 15px 20px 5px; text-align: center; }
+        .header h1 { color: var(--primary); margin: 0; font-size: 22px; font-weight: 900; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .welcome { color: #5a6570; font-size: 13px; font-style: normal; font-weight: 400; margin-top: 4px; margin-bottom: 10px; }
+        
+        .section-divider { color: #555; font-size: 11px; margin: 10px 0 6px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        input[type="text"], input[type="tel"], input[type="password"] { width: 85%; padding: 12px; margin: 4px 0; border-radius: 8px; border: 1px solid #ccc; background: #fff; color: #111; color-scheme: light; font-size: 13px; box-sizing: border-box; text-align: left; }
+        
+        /* PIN Input Eye Toggle Container */
+        input::placeholder { color: #4b5560; opacity: 1; }
+        .pay-note { width: 85%; margin: 6px 0 4px; color: #5a6570; font-size: 12px; text-align: center; line-height: 1.4; }
+        .pin-wrapper { position: relative; width: 85%; margin: 4px 0; }
+        .pin-wrapper input { width: 100% !important; margin: 0 !important; padding-right: 40px !important; }
+        .toggle-eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #64748b; user-select: none; display: flex; align-items: center; }
+
+        .plan-card { background: var(--card); padding: 14px 20px; border-radius: 12px; margin: 6px 0; border: 2px solid transparent; cursor: pointer; width: 85%; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
+        .plan-card.selected { border-color: var(--primary); background: #1c2128; }
+        
+        .plan-card { gap: 10px; }
+        .plan-info { text-align: left; flex: 1; min-width: 0; }
+        .plan-name { font-size: 14px; font-weight: 800; color: white; white-space: nowrap; }
+        .price { font-size: 22px; font-weight: 900; color: white; letter-spacing: 0.5px; white-space: nowrap; text-align: right; }
+        .price .cur { font-size: 12px; font-weight: 800; letter-spacing: 0; margin-left: 2px; }
+        .details { font-size: 11px; color: #8b949e; margin-top: 2px; white-space: nowrap; }
+        /* radio-style marker: empty circle, filled when the plan is selected */
+        .radio { flex: none; width: 18px; height: 18px; box-sizing: border-box; border-radius: 50%; border: 2px solid #6e7681; background: transparent; }
+        .plan-card.selected .radio { border: 5px solid var(--primary); background: #fff; }
+        /* featured daily plan: bigger, in blue */
+        .plan-card.featured { padding: 20px 16px; }
+        .plan-card.featured .plan-name { font-size: 16px; }
+        .plan-card.featured .price { font-size: 34px; letter-spacing: 0; }
+        .plan-card.featured .price .cur { font-size: 14px; }
+        .plan-card.featured .details { font-size: 12px; }
+        /* blue highlight: sits on the first plan by default, moves to whichever plan is chosen */
+        .plan-card.lit { background: #0a63b0; }
+        .plan-card.lit .details { color: #d6ebff; }
+        .plan-card.lit .radio { border-color: #d6ebff; }
+        .plan-card.lit.selected { background: #0a63b0; border-color: #fff; box-shadow: 0 0 0 3px var(--primary); }
+        .plan-card.lit.selected .radio { border: 5px solid #fff; background: #0a63b0; }
+        @media (max-width: 370px) { .plan-card { width: 92%; padding-left: 12px; padding-right: 12px; gap: 8px; } .plan-card.featured { padding: 18px 12px; } .plan-card.featured .price { font-size: 28px; } .price { font-size: 19px; } }
+        
+        .qty-stepper { display: flex; align-items: center; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; overflow: hidden; width: 48px; height: 34px; }
+        .qty-val { width: 28px !important; text-align: center !important; font-weight: bold; font-size: 13px; color: #ffffff !important; background: transparent !important; border: none !important; padding: 0 !important; margin: 0 !important; outline: none; }
+        .qty-btns { display: flex; flex-direction: column; border-left: 1px solid #30363d; height: 100%; width: 20px; }
+        .qty-btn { background: #161b22; color: white; border: none; font-size: 8px; padding: 0; cursor: pointer; flex: 1; display: flex; align-items: center; justify-content: center; }
+        .qty-btn:hover { background: #21262d; }
+
+        .btn-action { width: 85%; padding: 13px; background: var(--primary); border: none; border-radius: 8px; color: white; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 6px; }
+        /* voucher box and Activate button on one row */
+        .entry-row { width: 85%; margin: 4px auto 0; display: flex; gap: 8px; align-items: stretch; }
+        .entry-row input[type="text"] { flex: 1; min-width: 0; width: auto; margin: 0; }
+        .entry-row .btn-action { width: auto; flex: none; margin: 0; padding: 0 18px; }
+        /* divider with a line on each side of the text */
+        .section-divider.with-lines { display: flex; align-items: center; gap: 10px; width: 85%; margin-left: auto; margin-right: auto; }
+        .section-divider.with-lines::before, .section-divider.with-lines::after { content: ""; flex: 1; height: 1px; background: #cfd6de; }
+        #pay-button { background: #15803d; margin-top: 10px; }
+        #pay-button.idle { background: #9aa4ae; cursor: not-allowed; }
+        
+        .retrieve-link { color: var(--primary); text-decoration: none; font-size: 12px; font-weight: bold; margin-top: 12px; cursor: pointer; }
+        .footer-copy { color: #888; font-size: 10px; margin-top: 15px; }
+
+        /* MASK OVERLAY */
+        .mask-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); z-index: 9999; display: none; justify-content: center; align-items: center; }
+        .mask-overlay.active { display: flex; }
+        .mask-card { background: #161b22; border: 1px solid #30363d; border-radius: 14px; width: 90%; max-width: 360px; padding: 20px; display: flex; flex-direction: column; align-items: center; box-sizing: border-box; }
+        .mask-title { color: var(--primary); font-size: 16px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; }
+        .mask-subtitle { color: #8b949e; font-size: 12px; margin-bottom: 12px; text-align: center; }
+        .voucher-list { width: 100%; display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; margin-bottom: 12px; }
+        .code-row { background: #0d1117; border: 1px solid #30363d; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .code-txt { font-family: monospace; font-size: 15px; font-weight: bold; color: #22c55e; }
+        .btn-copy { background: var(--primary); color: white; border: none; padding: 6px 10px; border-radius: 5px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .btn-copy.copied { background: #22c55e; }
+        .btn-close-mask { background: transparent; border: 1px solid #30363d; color: #8b949e; width: 100%; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+        /* RETRIEVAL MODAL */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 10000; }
+        .modal-overlay.hidden { display: none !important; }
+        .modal-card { background: #ffffff; width: 90%; max-width: 360px; border-radius: 16px; padding: 24px; position: relative; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); font-family: inherit; color: #0f172a; }
+        .modal-close { position: absolute; top: 14px; right: 14px; background: none; border: none; font-size: 22px; color: #64748b; cursor: pointer; }
+        .modal-header { text-align: center; margin-bottom: 16px; }
+        .icon-circle { width: 44px; height: 44px; background: #eff6ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 0 auto 10px auto; }
+        .modal-header h3 { margin: 0 0 4px 0; color: #0f172a; font-size: 1.15rem; font-weight: 700; }
+        .modal-header p { margin: 0; color: #64748b; font-size: 0.8rem; }
+        .input-group { margin-bottom: 14px; text-align: left; }
+        .input-group label { display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 4px; text-transform: uppercase; }
+        .input-group input { width: 100% !important; padding: 10px 12px !important; border: 1.5px solid #cbd5e1 !important; border-radius: 8px !important; font-size: 0.9rem !important; outline: none; box-sizing: border-box; color: #0f172a !important; background: #fff !important; }
+        .input-group input:focus { border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(0, 149, 255, 0.15); }
+        .modal-pin-wrapper { position: relative; width: 100%; }
+        .modal-pin-wrapper input { padding-right: 40px !important; }
+        .btn-submit { width: 100%; padding: 12px; background: var(--primary); color: #ffffff; border: none; border-radius: 8px; font-weight: bold; font-size: 0.9rem; cursor: pointer; }
+        .btn-submit:hover { background: #007acc; }
+        .result-box { margin-top: 14px; padding: 10px; border-radius: 8px; font-size: 0.85rem; text-align: center; font-weight: 600; }
+        .result-box.hidden { display: none !important; }
+        .result-box.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    </style>
+</head> 
+<body>
+    <div class="container">
+        <div class="topnav">
+            <a href="#">Home</a>
+            <a href="#" class="nav-logo"><img src="admiral-ink-banner.jpg" alt="ADMIRAL INK" width="360" height="188"></a>
+            <a href="#">About Us</a>
+        </div>
+        
+        <div class="header">
+            <h1>
+                ADMIRAL INK
+                <svg width="27" height="27" viewBox="0 0 24 24" fill="var(--primary)"><path d="M12 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-4c-2.21 0-4.21.9-5.66 2.34l1.42 1.42C8.9 16.63 10.37 16 12 16s3.1.63 4.24 1.76l1.42-1.42C16.21 14.9 14.21 14 12 14zm0-4c-3.31 0-6.31 1.34-8.49 3.51l1.42 1.42C6.54 13.32 9.1 12 12 12s5.46 1.32 7.07 2.93l1.42-1.42C18.31 11.34 15.31 10 12 10zm0-4C7.58 6 3.58 7.79.58 10.7l1.42 1.42C4.41 9.71 8.01 8 12 8s7.59 1.71 10 4.12l1.42-1.42C20.42 7.79 16.42 6 12 6z"/></svg>
+            </h1>
+            <p class="welcome">Select a plan or enter your voucher code</p>
+        </div>
+
+        <div class="section-divider">Have a Voucher?</div>
+        <div class="entry-row">
+            <input type="text" id="voucherInput" placeholder="Enter Voucher Code" inputmode="numeric" pattern="[0-9]*" maxlength="12" autocomplete="off">
+            <button type="button" class="btn-action" id="activateBtn" onclick="submitVoucher()">Activate</button>
+        </div>
+
+        <div class="section-divider with-lines"><span>Or Buy Access Online</span></div>
+        <input type="tel" id="phone" placeholder="Phone Number for Mobile Money">
+        
+        <div class="pin-wrapper">
+            <input type="password" id="pin" maxlength="4" placeholder="Create 4-Digit PIN (e.g. 1234)">
+            <span class="toggle-eye" onclick="togglePinVisibility('pin', this)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></span>
+        </div>
+
+        <div class="pay-note">Pay with MTN MoMo, Telecel Cash or AT Money</div>
+        <div class="plan-card featured lit" id="plan-1" onclick="selectPlan(200, '22 Hours Access', 'plan-1')">
+            <span class="radio" aria-hidden="true"></span>
+            <div class="plan-info">
+                <div class="plan-name">22 Hours</div>
+                <div class="details">Unlimited</div>
+            </div>
+            <div class="price">2.00<span class="cur">GH₵</span></div>
+            <div class="qty-stepper" onclick="event.stopPropagation();">
+                <input type="text" class="qty-val" id="qty-plan-1" value="1" readonly>
+                <div class="qty-btns">
+                    <button type="button" class="qty-btn" onclick="adjustQty('plan-1', 1)">▲</button>
+                    <button type="button" class="qty-btn" onclick="adjustQty('plan-1', -1)">▼</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="plan-card" id="plan-2" onclick="selectPlan(1250, '7-Days Access', 'plan-2')">
+            <span class="radio" aria-hidden="true"></span>
+            <div class="plan-info">
+                <div class="plan-name">7 Days</div>
+                <div class="details">Unlimited</div>
+            </div>
+            <div class="price">12.50<span class="cur">GH₵</span></div>
+            <div class="qty-stepper" onclick="event.stopPropagation();">
+                <input type="text" class="qty-val" id="qty-plan-2" value="1" readonly>
+                <div class="qty-btns">
+                    <button type="button" class="qty-btn" onclick="adjustQty('plan-2', 1)">▲</button>
+                    <button type="button" class="qty-btn" onclick="adjustQty('plan-2', -1)">▼</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="plan-card" id="plan-3" onclick="selectPlan(4800, '30 Days Access', 'plan-3')">
+            <span class="radio" aria-hidden="true"></span>
+            <div class="plan-info">
+                <div class="plan-name">30 Days</div>
+                <div class="details">Unlimited</div>
+            </div>
+            <div class="price">48.00<span class="cur">GH₵</span></div>
+            <div class="qty-stepper" onclick="event.stopPropagation();">
+                <input type="text" class="qty-val" id="qty-plan-3" value="1" readonly>
+                <div class="qty-btns">
+                    <button type="button" class="qty-btn" onclick="adjustQty('plan-3', 1)">▲</button>
+                    <button type="button" class="qty-btn" onclick="adjustQty('plan-3', -1)">▼</button> 
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="btn-action" id="pay-button" onclick="payWithPaystack()">Select a Wi-Fi Plan First</button>
+        <a class="retrieve-link" onclick="openRetrieveModal(event)">Already Paid? Retrieve Voucher(s)</a>
+        <div class="footer-copy">© Copyright 2026 ADMIRAL INK & BEATZ. All Rights Reserved.</div>
+    </div>
+
+    <!-- MASK OVERLAY -->
+    <div class="mask-overlay" id="voucher-mask">
+        <div class="mask-card">
+            <div class="mask-title" id="mask-header">Your Vouchers</div>
+            <div class="mask-subtitle" id="mask-sub">Code #1 is being activated automatically</div>
+            <div class="voucher-list" id="mask-vouchers-list"></div>
+            <button type="button" class="btn-close-mask" onclick="closeMask()">Close</button>
+        </div>
+    </div>
+
+    <!-- RETRIEVAL MODAL -->
+    <div id="retrieveModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <button type="button" class="modal-close" onclick="closeRetrieveModal()">&times;</button>
+            <div class="modal-header">
+                <div class="icon-circle">
+                    <svg width="27" height="27" viewBox="0 0 24 24" fill="var(--primary)"><path d="M12 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-4c-2.21 0-4.21.9-5.66 2.34l1.42 1.42C8.9 16.63 10.37 16 12 16s3.1.63 4.24 1.76l1.42-1.42C16.21 14.9 14.21 14 12 14zm0-4c-3.31 0-6.31 1.34-8.49 3.51l1.42 1.42C6.54 13.32 9.1 12 12 12s5.46 1.32 7.07 2.93l1.42-1.42C18.31 11.34 15.31 10 12 10zm0-4C7.58 6 3.58 7.79.58 10.7l1.42 1.42C4.41 9.71 8.01 8 12 8s7.59 1.71 10 4.12l1.42-1.42C20.42 7.79 16.42 6 12 6z"/></svg>
+                </div>
+                <h3>Retrieve Your Voucher</h3>
+                <p>Enter your Mobile Money phone number and 4-digit PIN.</p>
+            </div>
+            <form id="retrieveForm" onsubmit="handleRetrieveSubmit(event)">
+                <div class="input-group">
+                    <label for="retrieveInput">Phone Number</label>
+                    <input type="text" id="retrieveInput" placeholder="024XXXXXXX" required autocomplete="off" />
+                </div>
+                <div class="input-group">
+                    <label for="retrievePin">4-Digit Security PIN</label>
+                    <div class="modal-pin-wrapper">
+                        <input type="password" id="retrievePin" maxlength="4" placeholder="****" required autocomplete="off" />
+                        <span class="toggle-eye" onclick="togglePinVisibility('retrievePin', this)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></span>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit" id="retrieveBtn"><span>Find Voucher</span></button>
+            </form>
+            <div id="retrieveResult" class="result-box hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        let selectedAmountPesewas = 0, selectedLabel = "", activeCardId = "";
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetIp = urlParams.get('target') || '192.168.0.18'; 
+        const clientMac = urlParams.get('clientMac') || '';
+        const apMac = urlParams.get('apMac') || '';
+        const ssidName = urlParams.get('ssidName') || '';
+
+        window.addEventListener('popstate', () => {
+            if (document.getElementById('voucher-mask').classList.contains('active')) {
+                history.pushState(null, null, window.location.href);
+            }
+        });
+
+        const EYE_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_SLASH_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+
+document.querySelectorAll('.toggle-eye').forEach(el => { el.innerHTML = EYE_ICON; });
+
+function togglePinVisibility(inputId, iconEl) {
+    const input = document.getElementById(inputId);
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    iconEl.innerHTML = show ? EYE_SLASH_ICON : EYE_ICON;
+}
+
+        function formatRemaining(ms) {
+            const s = Math.max(0, Math.floor(ms / 1000));
+            const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+            if (d > 0) return `${d}d ${h}h ${m}m`;
+            if (h > 0) return `${h}h ${m}m`;
+            return `${m}m`;
+        }
+
+        function selectPlan(amount, label, cardId) {
+            selectedAmountPesewas = amount;
+            selectedLabel = label;
+            activeCardId = cardId;
+            document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected', 'lit'));
+            document.getElementById(cardId).classList.add('selected', 'lit');
+            document.getElementById('pay-button').classList.remove('idle');
+            updatePayButton();
+        }
+
+        function adjustQty(cardId, delta) {
+            const el = document.getElementById('qty-' + cardId);
+            let val = Math.max(1, Math.min(10, (parseInt(el.value) || 1) + delta));
+            el.value = val;
+            if (activeCardId === cardId) updatePayButton();
+        }
+
+        function updatePayButton() {
+            if (!activeCardId) return;
+            const qty = parseInt(document.getElementById('qty-' + activeCardId).value) || 1;
+            document.getElementById('pay-button').innerText = `Pay GH₵${((selectedAmountPesewas * qty) / 100).toFixed(2)}`;
+        }
+
+        async function submitVoucher(overrideCode) {
+            const voucherInput = document.getElementById('voucherInput');
+            const btn = document.getElementById('activateBtn');
+            const cleanCode = (s) => String(s || '').replace(/[\s\-.,]+/g, '').replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, '');
+            const code = (typeof overrideCode === 'string' && cleanCode(overrideCode))
+                         ? cleanCode(overrideCode)
+                         : (voucherInput ? cleanCode(voucherInput.value) : '');
+
+            if (!/^\d{6}$/.test(code)) {
+                alert("A voucher code is 6 digits (numbers only). Please check it and try again.");
+                return;
+            }
+            if (btn && btn.disabled) return; // ignore repeat taps while activating
+
+            const redirectUrl = urlParams.get('redirectUrl') || 'https://www.google.com';
+            const radioId = urlParams.get('radioId') || '';
+            const site = urlParams.get('site') || '';
+            const REDIRECT_DELAY_MS = 1000; // lower = faster redirect; raise it if the page after connecting ever fails to load
+
+            const resetButton = () => {
+                if (btn) { btn.disabled = false; btn.innerText = 'Activate'; }
+            };
+            if (btn) { btn.disabled = true; btn.innerText = 'Activating...'; }
+
+            try {
+                const response = await fetch('/activate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        voucherCode: code,
+                        clientMac: clientMac,
+                        apMac: apMac,
+                        ssidName: ssidName,
+                        radioId: radioId,
+                        site: site,
+                        redirectUrl: redirectUrl,
+                        screen: `${screen.width}x${screen.height}@${window.devicePixelRatio || 1}`
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    if (btn) btn.innerText = data.remainingMs
+                        ? `Connected ✓ · ${formatRemaining(data.remainingMs)} left`
+                        : 'Connected ✓';
+                    setTimeout(() => { window.location.href = data.redirectUrl; }, REDIRECT_DELAY_MS);
+                } else {
+                    resetButton();
+                    alert("Activation Failed: " + (data.error || "Unknown error"));
+                    if (data.restricted) window.location.reload(); // show the buy-online-only page
+                }
+            } catch (err) {
+                console.error("Submit Error:", err);
+                resetButton();
+                alert("Activation Failed: Could not reach backend server.");
+            }
+        }
+
+        function payWithPaystack() {
+            if (!selectedAmountPesewas) return alert("Select a plan first.");
+            const phone = document.getElementById('phone').value.trim();
+            const pin = document.getElementById('pin').value.trim();
+
+            if (!phone) return alert("Enter your phone number.");
+            if (!pin || pin.length < 4) return alert("Please set a 4-digit PIN to secure your voucher recovery.");
+
+            const qty = parseInt(document.getElementById('qty-' + activeCardId).value) || 1;
+            const label = selectedLabel, amount = selectedAmountPesewas * qty;
+
+            // 1) Tell the server what is being bought BEFORE paying, so it can finish the purchase even if this page is lost
+            fetch('/intent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ plan: label, quantity: qty, pin, phone, clientMac })
+            })
+            .then(r => r.json())
+            .then(d => {
+                if (!d.success || !d.reference) return alert(d.error || "Could not start the payment. Please try again.");
+                savePending({ reference: d.reference, plan: label, quantity: qty, pin, t: Date.now(), started: true });
+                openPaystack(d.reference, amount, phone, label, qty, pin);
+            })
+            .catch(() => alert("Could not reach the server. Check your wifi connection and try again."));
+        }
+
+        function openPaystack(reference, amount, phone, label, qty, pin) {
+            PaystackPop.setup({
+                key: 'pk_live_4f0c3e3519fe0b01e20ec1cdb0bac29dfa9d30ca',
+                email: "wifi-customer@admiralink.com",
+                ref: reference,
+                amount: amount,
+                currency: 'GHS',
+                channels: ['mobile_money'],
+                metadata: {
+                    custom_fields: [
+                        { display_name: "Mobile Number", variable_name: "mobile_number", value: phone }
+                    ]
+                },
+                callback: (res) => verifyPayment(res.reference, label, qty, pin)
+            }).openIframe();
+        }
+
+        // ---- Payment recovery: if the wifi drops while the code is being fetched, keep trying ----
+        const PENDING_KEY = 'adm_pending_payment';
+        function savePending(p) { try { localStorage.setItem(PENDING_KEY, JSON.stringify(p)); } catch (e) {} }
+        function clearPending() { try { localStorage.removeItem(PENDING_KEY); } catch (e) {} }
+        function loadPending() { try { return JSON.parse(localStorage.getItem(PENDING_KEY) || 'null'); } catch (e) { return null; } }
+
+        function showPayNotice(text) {
+            let n = document.getElementById('payNotice');
+            if (!text) { if (n) n.remove(); return; }
+            if (!n) {
+                n = document.createElement('div');
+                n.id = 'payNotice';
+                n.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#111;color:#fff;padding:14px 16px;border-radius:12px;font-size:14px;line-height:1.4;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.35)';
+                document.body.appendChild(n);
+            }
+            n.innerText = text;
+        }
+
+        function verifyPayment(reference, plan, quantity, pin, attempt = 0, silent = false) {
+            if (attempt === 0) savePending({ reference, plan, quantity, pin, t: Date.now() });
+            fetch('/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reference, plan, quantity, pin })
+            })
+            .then(res => {
+                if (res.status >= 500) throw new Error('server busy');
+                return res.json();
+            })
+            .then(data => {
+                showPayNotice('');
+                if (data.success && data.vouchers && data.vouchers.length > 0) {
+                    clearPending();
+                    document.getElementById('mask-header').innerText = "Your Vouchers";
+                    document.getElementById('mask-sub').innerText = "Code #1 activating automatically...";
+                    displayMask(data.vouchers, true);
+                } else if (silent) {
+                    // Reopened page, payment not completed (yet): say nothing, forget it after 30 minutes
+                    const p = loadPending();
+                    if (!p || Date.now() - p.t > 30 * 60 * 1000) clearPending();
+                } else {
+                    clearPending();
+                    alert(data.error || "Payment failed or out of stock.");
+                }
+            })
+            .catch(err => {
+                console.error("Verification Error:", err);
+                if (silent) return;   // reopened page: the server keeps checking by itself
+                // Network dropped or server busy: payment is safe, keep asking for about 2 minutes
+                if (attempt < 40) {
+                    showPayNotice('Payment received. Getting your code... please stay connected to the wifi.');
+                    setTimeout(() => verifyPayment(reference, plan, quantity, pin, attempt + 1), 3000);
+                } else {
+                    showPayNotice('Payment received. Reconnect to the wifi and reopen this page. Your code will appear. Reference: ' + reference);
+                }
+            });
+        }
+
+        // Page opened again after a dropped connection: carry on getting the code
+        window.addEventListener('load', () => {
+            const p = loadPending();
+            if (p && p.reference && Date.now() - p.t < 24 * 60 * 60 * 1000) {
+                // A purchase that was started or paid before the page was lost: check it quietly
+                verifyPayment(p.reference, p.plan, p.quantity, p.pin, 1, true);
+            } else if (p) clearPending();
+        });
+
+        function displayMask(vouchers, autoConnect = false) {
+            if (!vouchers || !vouchers.length) return;
+            
+            const list = document.getElementById('mask-vouchers-list');
+            const voucherInput = document.getElementById('voucherInput');
+            
+            if (voucherInput) {
+                voucherInput.value = vouchers[0];
+            }
+            
+            list.innerHTML = '';
+
+            vouchers.forEach((code) => {
+                const row = document.createElement('div');
+                row.className = 'code-row';
+                row.innerHTML = `
+                    <span class="code-txt">${code}</span>
+                    <button type="button" class="btn-copy" onclick="copyCode('${code}', event)">Copy Code</button>
+                `;
+                list.appendChild(row);
+            });
+
+            history.pushState(null, null, window.location.href);
+            document.getElementById('voucher-mask').classList.add('active');
+            
+            if (autoConnect) {
+                setTimeout(() => submitVoucher(vouchers[0]), 1500);
+            }
+        }
+
+        function copyCode(code, evt) {
+            const btn = evt ? evt.currentTarget : null;
+
+            const applyCopiedState = () => {
+                if (!btn) return;
+                btn.innerText = "Copied to Clipboard";
+                btn.classList.add('copied');
+
+                setTimeout(() => {
+                    btn.innerText = "Copy Code";
+                    btn.classList.remove('copied');
+                }, 2000);
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(code)
+                    .then(() => applyCopiedState())
+                    .catch(() => fallbackCopy(code, applyCopiedState));
+            } else {
+                fallbackCopy(code, applyCopiedState);
+            }
+        }
+
+        function fallbackCopy(text, onSuccess) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                if (successful && onSuccess) onSuccess();
+            } catch (err) {
+                console.error('Fallback copy failed', err);
+            }
+
+            document.body.removeChild(textArea);
+        }
+
+        function openRetrieveModal(event) {
+            if (event) event.preventDefault();
+            const modal = document.getElementById('retrieveModal');
+            const resultBox = document.getElementById('retrieveResult');
+            modal.classList.remove('hidden');
+            document.getElementById('retrieveInput').value = '';
+            document.getElementById('retrievePin').value = '';
+            resultBox.className = 'result-box hidden';
+            resultBox.innerHTML = '';
+            document.getElementById('retrieveInput').focus();
+        }
+
+        function closeRetrieveModal() {
+            document.getElementById('retrieveModal').classList.add('hidden');
+        }
+
+        window.addEventListener('click', function(e) {
+            const modal = document.getElementById('retrieveModal');
+            if (e.target === modal) closeRetrieveModal();
+        });
+
+        async function handleRetrieveSubmit(e) {
+            e.preventDefault();
+            const query = document.getElementById('retrieveInput').value.trim();
+            const pin = document.getElementById('retrievePin').value.trim();
+            const btn = document.getElementById('retrieveBtn');
+            const resultBox = document.getElementById('retrieveResult');
+
+            if (!query || !pin) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<span>Searching...</span>';
+            resultBox.className = 'result-box hidden';
+
+            try {
+                const response = await fetch('/retrieve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, pin })
+                });
+                const data = await response.json();
+
+                if (data.success && data.vouchers && data.vouchers.length > 0) {
+                    closeRetrieveModal();
+                    document.getElementById('mask-header').innerText = "Retrieved Vouchers";
+                    document.getElementById('mask-sub').innerText = "Tap copy or click Activate below";
+                    displayMask(data.vouchers, false);
+                } else {
+                    resultBox.classList.remove('hidden');
+                    resultBox.className = 'result-box error';
+                    resultBox.innerText = data.error || 'Incorrect phone number or PIN.';
+                }
+            } catch (err) {
+                console.error("Retrieve Error:", err);
+                resultBox.classList.remove('hidden');
+                resultBox.className = 'result-box error';
+                resultBox.innerText = 'Server error. Please try again.';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Find Voucher</span>';
+            }
+        }
+
+        function closeMask() {
+            document.getElementById('voucher-mask').classList.remove('active');
+        }
+    </script>
+</body>
+</html>
